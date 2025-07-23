@@ -1,35 +1,72 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def generate_and_save_random_signal(Fs, duration, noise_amplitude):
+def generate_and_save_random_signal(Fs, duration, noise_amplitude, force_random=False):
     """
     Gera um sinal sintético com componentes senoidais aleatórias e ruído.
     Retorna o sinal ruidoso e o vetor de tempo.
     
-    Para o modo educativo, usa parâmetros mais controlados.
+    Args:
+        force_random: Se True, força geração totalmente aleatória (pode não ter pulsar)
     """
     T = 1 / Fs
     t = np.arange(0, duration, T)
 
-    # Para demonstração educativa, usar componentes mais previsíveis
-    # em vez de totalmente aleatórias
-    if hasattr(np.random, '_bit_generator') and np.random.bit_generator.state['state']['state'] == 42:
-        # Se seed foi definida como 42 (modo educativo), usar frequências específicas
+    # Verificar se deve usar modo educativo ou aleatório
+    use_educational_mode = not force_random and hasattr(np.random, 'get_state') and np.random.get_state()[1][0] == 42
+    
+    if use_educational_mode:
+        # Modo educativo: usar frequências específicas para demonstração
         frequencies = [5, 15, 25]  # Hz - bem separadas para visualização
         amplitudes = [1.5, 1.0, 0.8]
         phases = [0, np.pi/4, np.pi/2]
         num_components = 3
     else:
-        # Modo aleatório original
-        num_components = np.random.randint(2, 6)
-        frequencies = []
-        amplitudes = []
-        phases = []
+        # Modo aleatório: pode gerar diferentes tipos de sinais
+        signal_type = np.random.choice(['pulsar', 'noise_only', 'irregular'], p=[0.6, 0.2, 0.2])
         
-        for _ in range(num_components):
-            frequencies.append(np.random.uniform(1, 50))  # Hz
-            amplitudes.append(np.random.uniform(0.5, 2.0))
+        if signal_type == 'noise_only':
+            # Apenas ruído - simula não detecção de pulsar
+            num_components = 0
+            frequencies = []
+            amplitudes = []
+            phases = []
+        elif signal_type == 'irregular':
+            # Componentes com frequências muito próximas ou muito fracas
+            num_components = np.random.randint(1, 4)
+            frequencies = []
+            amplitudes = []
+            phases = []
+            
+            base_freq = np.random.uniform(1, 10)
+            for i in range(num_components):
+                # Frequências próximas que podem causar batimento
+                frequencies.append(base_freq + i * np.random.uniform(0.1, 2))
+                amplitudes.append(np.random.uniform(0.2, 0.6))  # Amplitudes menores
+                phases.append(np.random.uniform(0, 2 * np.pi))
+        else:
+            # Pulsar típico com componentes bem definidas
+            num_components = np.random.randint(2, 5)
+            frequencies = []
+            amplitudes = []
+            phases = []
+            
+            # Frequência fundamental
+            fundamental = np.random.uniform(2, 20)
+            frequencies.append(fundamental)
+            amplitudes.append(np.random.uniform(1.0, 2.5))
             phases.append(np.random.uniform(0, 2 * np.pi))
+            
+            # Harmônicos ou frequências relacionadas
+            for i in range(1, num_components):
+                if np.random.random() < 0.7:  # 70% chance de ser harmônico
+                    freq = fundamental * (i + 1) + np.random.uniform(-1, 1)
+                else:  # Frequência independente
+                    freq = np.random.uniform(5, 50)
+                
+                frequencies.append(freq)
+                amplitudes.append(np.random.uniform(0.3, 1.5))
+                phases.append(np.random.uniform(0, 2 * np.pi))
 
     # Gerar sinal como superposição
     signal = np.zeros_like(t)
@@ -41,7 +78,7 @@ def generate_and_save_random_signal(Fs, duration, noise_amplitude):
     noise = noise_amplitude * np.random.randn(len(t))
     noisy_signal = signal + noise
 
-    # Opcional: Salvar informações para debugging
+    # Salvar informações para debugging
     signal_info = {
         'frequencies': frequencies,
         'amplitudes': amplitudes,
@@ -49,13 +86,11 @@ def generate_and_save_random_signal(Fs, duration, noise_amplitude):
         'num_components': num_components,
         'noise_amplitude': noise_amplitude,
         'fs': Fs,
-        'duration': duration
+        'duration': duration,
+        'signal_type': 'educational' if use_educational_mode else signal_type if 'signal_type' in locals() else 'pulsar'
     }
     
-    # Salvar arquivo opcional
-    # np.savetxt('random_signal_noisy.txt', noisy_signal)
-    
-    return noisy_signal, t
+    return noisy_signal, t, signal_info
 
 def generate_educational_components(Fs, duration):
     """

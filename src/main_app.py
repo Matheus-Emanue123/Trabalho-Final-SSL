@@ -6,7 +6,6 @@ import numpy as np
 from matplotlib.patches import Rectangle
 import matplotlib.patches as mpatches
 
-# Importa as funções dos seus outros scripts
 from generate_signal import generate_and_save_random_signal
 from process_signal import process_and_analyze_signal
 
@@ -14,8 +13,36 @@ class PulsarDetectorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("🌟 Detector de Pulsares Educativo - Sinais e Sistemas Lineares")
-        self.root.geometry("1400x900")
-        self.root.configure(bg='#f0f0f0')
+        self.root.geometry("1500x950")
+        
+        # Esquema de cores moderno e tecnológico
+        self.colors = {
+            'bg_dark': '#1a1a2e',      # Azul escuro espacial
+            'bg_medium': '#16213e',     # Azul médio
+            'bg_light': '#0f3460',      # Azul claro
+            'accent_cyan': '#00d4ff',   # Ciano brilhante
+            'accent_purple': '#9d4edd', # Roxo tecnológico
+            'accent_green': '#00f5ff',  # Verde neon
+            'text_primary': '#ffffff',  # Branco puro
+            'text_secondary': '#b0bec5', # Cinza claro
+            'success': '#4caf50',       # Verde sucesso
+            'warning': '#ff9800',       # Laranja aviso
+            'error': '#f44336',         # Vermelho erro
+            'button_primary': '#0088cc', # Azul botão
+            'button_hover': '#00a6e6'   # Azul hover
+        }
+        
+        self.root.configure(bg=self.colors['bg_dark'])
+        
+        # Fontes modernas e tecnológicas
+        self.fonts = {
+            'title': ('Consolas', 18, 'bold'),        # Fonte monospace tecnológica
+            'subtitle': ('Segoe UI', 12, 'normal'),   # Fonte moderna
+            'button': ('Segoe UI', 10, 'bold'),       # Botões
+            'text': ('Segoe UI', 9, 'normal'),        # Texto geral
+            'code': ('Consolas', 9, 'normal'),        # Código/dados
+            'header': ('Segoe UI', 14, 'bold')        # Cabeçalhos
+        }
 
         # Variáveis de estado
         self.current_noisy_signal = None
@@ -26,157 +53,299 @@ class PulsarDetectorApp:
         self.duration = 2
         self.current_step = 0
         self.total_steps = 5
+        self.random_mode = False  # Novo: controla modo aleatório vs educativo
+        self.signal_info = {}  # Novo: armazena informações do sinal gerado
 
         # Configurações visuais
         try:
-            plt.style.use('seaborn-v0_8')
+            plt.style.use('dark_background')  # Tema escuro para gráficos
         except:
             try:
-                plt.style.use('seaborn')
+                plt.style.use('seaborn-v0_8-dark')
             except:
-                plt.style.use('default')
+                try:
+                    plt.style.use('seaborn-dark')
+                except:
+                    plt.style.use('default')
+        
+        # Configurar matplotlib para tema escuro
+        plt.rcParams.update({
+            'figure.facecolor': self.colors['bg_dark'],
+            'axes.facecolor': self.colors['bg_medium'],
+            'axes.edgecolor': self.colors['accent_cyan'],
+            'axes.labelcolor': self.colors['text_primary'],
+            'xtick.color': self.colors['text_secondary'],
+            'ytick.color': self.colors['text_secondary'],
+            'text.color': self.colors['text_primary'],
+            'grid.color': self.colors['text_secondary'],
+            'grid.alpha': 0.3
+        })
         
         self._create_widgets()
 
     def _create_widgets(self):
         # === PAINEL SUPERIOR: TÍTULO E PROGRESSO ===
-        header_frame = tk.Frame(self.root, bg='#2c3e50', height=80)
+        header_frame = tk.Frame(self.root, bg=self.colors['bg_medium'], height=100)
         header_frame.pack(side=tk.TOP, fill=tk.X)
         header_frame.pack_propagate(False)
 
-        title_label = tk.Label(header_frame, text="🌟 DETECTOR DE PULSARES EDUCATIVO", 
-                              font=('Arial', 16, 'bold'), fg='white', bg='#2c3e50')
-        title_label.pack(pady=15)
+        # Gradiente visual com canvas
+        header_canvas = tk.Canvas(header_frame, bg=self.colors['bg_medium'], height=100, highlightthickness=0)
+        header_canvas.pack(fill=tk.BOTH)
+        
+        # Criar gradiente simulado
+        for i in range(100):
+            color_intensity = int(26 + i * 0.3)  # Gradiente sutil
+            color = f"#{color_intensity:02x}{color_intensity+10:02x}{color_intensity+30:02x}"
+            header_canvas.create_line(0, i, 2000, i, fill=color, width=1)
 
-        subtitle_label = tk.Label(header_frame, text="Aprendendo Processamento Digital de Sinais na Prática", 
-                                 font=('Arial', 10), fg='#ecf0f1', bg='#2c3e50')
-        subtitle_label.pack()
+        title_label = tk.Label(header_frame, text="🌟 DETECTOR DE PULSARES EDUCATIVO", 
+                              font=self.fonts['title'], fg=self.colors['accent_cyan'], 
+                              bg=self.colors['bg_medium'])
+        title_label.place(relx=0.5, rely=0.35, anchor='center')
+
+        subtitle_label = tk.Label(header_frame, text="⚡ Processamento Digital de Sinais Aplicado à Astrofísica ⚡", 
+                                 font=self.fonts['subtitle'], fg=self.colors['text_secondary'], 
+                                 bg=self.colors['bg_medium'])
+        subtitle_label.place(relx=0.5, rely=0.65, anchor='center')
 
         # === PAINEL LATERAL: CONTROLES E EXPLICAÇÕES ===
-        self.sidebar = tk.Frame(self.root, bg='#34495e', width=350)
+        self.sidebar = tk.Frame(self.root, bg=self.colors['bg_light'], width=380)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
         self.sidebar.pack_propagate(False)
 
         # Progresso dos passos
-        progress_frame = tk.Frame(self.sidebar, bg='#34495e')
-        progress_frame.pack(fill=tk.X, padx=10, pady=10)
+        progress_frame = tk.Frame(self.sidebar, bg=self.colors['bg_light'])
+        progress_frame.pack(fill=tk.X, padx=15, pady=15)
 
-        tk.Label(progress_frame, text="📚 PROGRESSO DO APRENDIZADO", 
-                font=('Arial', 12, 'bold'), fg='white', bg='#34495e').pack()
+        tk.Label(progress_frame, text="� PROGRESSO DA MISSÃO", 
+                font=self.fonts['header'], fg=self.colors['accent_green'], 
+                bg=self.colors['bg_light']).pack()
 
-        self.progress_var = tk.StringVar(value="Passo 0/5: Início")
+        self.progress_var = tk.StringVar(value="Passo 0/5: Inicializando Sistema")
         self.progress_label = tk.Label(progress_frame, textvariable=self.progress_var,
-                                      font=('Arial', 10), fg='#ecf0f1', bg='#34495e')
-        self.progress_label.pack(pady=5)
+                                      font=self.fonts['text'], fg=self.colors['text_primary'], 
+                                      bg=self.colors['bg_light'])
+        self.progress_label.pack(pady=8)
 
-        self.progress_bar = ttk.Progressbar(progress_frame, length=300, mode='determinate')
+        # Barra de progresso customizada
+        self.progress_bar = ttk.Progressbar(progress_frame, length=320, mode='determinate',
+                                           style='TProgressbar')
         self.progress_bar.pack(pady=5)
 
-        # Botões de controle
-        button_frame = tk.Frame(self.sidebar, bg='#34495e')
-        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        # Botões de controle com estilo tecnológico
+        button_frame = tk.Frame(self.sidebar, bg=self.colors['bg_light'])
+        button_frame.pack(fill=tk.X, padx=15, pady=10)
 
         self.step_buttons = []
         steps = [
-            ("🎲 1. Gerar Componentes", self._step1_generate_components),
-            ("➕ 2. Superposição", self._step2_superposition),
+            ("🔬 1. Gerar Componentes", self._step1_generate_components),
+            ("⚡ 2. Superposição", self._step2_superposition),
             ("📡 3. Adicionar Ruído", self._step3_add_noise),
-            ("🔽 4. Filtrar Sinal", self._step4_filter_signal),
-            ("📊 5. Análise FFT", self._step5_fft_analysis)
+            ("� 4. Filtrar Sinal", self._step4_filter_signal),
+            ("� 5. Análise FFT", self._step5_fft_analysis)
         ]
 
         for i, (text, command) in enumerate(steps):
             btn = tk.Button(button_frame, text=text, command=command,
-                           font=('Arial', 10, 'bold'), bg='#3498db', fg='white',
-                           relief=tk.RAISED, bd=2, padx=10, pady=5)
-            btn.pack(fill=tk.X, pady=2)
+                           font=self.fonts['button'], bg=self.colors['button_primary'], 
+                           fg=self.colors['text_primary'], relief=tk.FLAT, bd=0, 
+                           padx=15, pady=8, cursor='hand2')
+            btn.pack(fill=tk.X, pady=3)
+            
+            # Efeitos hover
+            btn.bind("<Enter>", lambda e, b=btn: b.configure(bg=self.colors['button_hover']))
+            btn.bind("<Leave>", lambda e, b=btn: b.configure(bg=self.colors['button_primary'] if b['state'] == 'normal' else '#555'))
+            
             btn.configure(state='disabled' if i > 0 else 'normal')
+            if i > 0:
+                btn.configure(bg='#555')
             self.step_buttons.append(btn)
 
-        # Reset button
-        reset_btn = tk.Button(button_frame, text="🔄 Recomeçar", command=self._reset_all,
-                             font=('Arial', 10, 'bold'), bg='#e74c3c', fg='white',
-                             relief=tk.RAISED, bd=2, padx=10, pady=5)
-        reset_btn.pack(fill=tk.X, pady=10)
+        # Reset button com destaque
+        reset_btn = tk.Button(button_frame, text="🔄 REINICIALIZAR SISTEMA", command=self._reset_all,
+                             font=self.fonts['button'], bg=self.colors['error'], 
+                             fg=self.colors['text_primary'], relief=tk.FLAT, bd=0, 
+                             padx=15, pady=8, cursor='hand2')
+        reset_btn.pack(fill=tk.X, pady=8)
+        
+        # Hover effect para reset
+        reset_btn.bind("<Enter>", lambda e: reset_btn.configure(bg='#d32f2f'))
+        reset_btn.bind("<Leave>", lambda e: reset_btn.configure(bg=self.colors['error']))
 
-        # Área de explicações
-        explanation_frame = tk.LabelFrame(self.sidebar, text="📖 Conceitos Teóricos", 
-                                         font=('Arial', 11, 'bold'), fg='white', bg='#34495e')
-        explanation_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Modo de operação com estilo futurístico
+        mode_frame = tk.LabelFrame(self.sidebar, text="� MODO DE OPERAÇÃO", 
+                                  font=self.fonts['button'], fg=self.colors['accent_purple'],
+                                  bg=self.colors['bg_light'], labelanchor='n')
+        mode_frame.pack(fill=tk.X, padx=15, pady=10)
+        
+        self.mode_var = tk.StringVar(value="educativo")
+        
+        mode_edu = tk.Radiobutton(mode_frame, text="🎓 Educativo (Demonstração)", 
+                                 variable=self.mode_var, value="educativo", 
+                                 bg=self.colors['bg_light'], fg=self.colors['text_primary'], 
+                                 selectcolor=self.colors['accent_cyan'], 
+                                 font=self.fonts['text'], command=self._on_mode_change)
+        mode_edu.pack(anchor='w', padx=10, pady=5)
+        
+        mode_random = tk.Radiobutton(mode_frame, text="🎲 Aleatório (Casos Reais)", 
+                                    variable=self.mode_var, value="aleatorio",
+                                    bg=self.colors['bg_light'], fg=self.colors['text_primary'],
+                                    selectcolor=self.colors['accent_cyan'], 
+                                    font=self.fonts['text'], command=self._on_mode_change)
+        mode_random.pack(anchor='w', padx=10, pady=5)
+
+        # Área de explicações com estilo high-tech
+        explanation_frame = tk.LabelFrame(self.sidebar, text="🧠 BANCO DE CONHECIMENTO", 
+                                         font=self.fonts['button'], fg=self.colors['accent_green'], 
+                                         bg=self.colors['bg_light'], labelanchor='n')
+        explanation_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=10)
 
         self.explanation_text = scrolledtext.ScrolledText(explanation_frame, 
-                                                         wrap=tk.WORD, width=40, height=15,
-                                                         font=('Arial', 9), bg='#ecf0f1')
-        self.explanation_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+                                                         wrap=tk.WORD, width=45, height=18,
+                                                         font=self.fonts['text'], 
+                                                         bg=self.colors['bg_dark'], 
+                                                         fg=self.colors['text_primary'],
+                                                         insertbackground=self.colors['accent_cyan'],
+                                                         selectbackground=self.colors['accent_purple'])
+        self.explanation_text.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
 
         # === ÁREA PRINCIPAL: GRÁFICOS ===
-        self.plot_frame = tk.Frame(self.root, bg='white')
-        self.plot_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.plot_frame = tk.Frame(self.root, bg=self.colors['bg_dark'])
+        self.plot_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=15, pady=15)
 
-        # Configuração inicial do matplotlib
-        self.fig, self.ax = plt.subplots(1, 1, figsize=(10, 6))
-        self.fig.patch.set_facecolor('white')
+        # Configuração matplotlib com tema escuro
+        self.fig, self.ax = plt.subplots(1, 1, figsize=(12, 7), 
+                                        facecolor=self.colors['bg_dark'])
+        self.ax.set_facecolor(self.colors['bg_medium'])
         
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.plot_frame)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.canvas_widget.configure(bg=self.colors['bg_dark'])
 
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_frame)
+        # Toolbar com fundo escuro
+        toolbar_frame = tk.Frame(self.plot_frame, bg=self.colors['bg_dark'])
+        toolbar_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        self.toolbar = NavigationToolbar2Tk(self.canvas, toolbar_frame)
         self.toolbar.update()
+        self.toolbar.configure(bg=self.colors['bg_dark'])
 
-        # Status bar
-        self.status_var = tk.StringVar(value="Pronto para começar! Clique no primeiro passo.")
-        status_bar = tk.Label(self.root, textvariable=self.status_var, 
-                             relief=tk.SUNKEN, anchor=tk.W, font=('Arial', 9))
-        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        # Status bar com estilo futurístico
+        status_frame = tk.Frame(self.root, bg=self.colors['bg_medium'], height=30)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        status_frame.pack_propagate(False)
+        
+        self.status_var = tk.StringVar(value="🚀 Sistema Inicializado | Pronto para Detecção de Pulsares")
+        status_bar = tk.Label(status_frame, textvariable=self.status_var, 
+                             relief=tk.FLAT, anchor=tk.W, font=self.fonts['text'],
+                             bg=self.colors['bg_medium'], fg=self.colors['text_secondary'])
+        status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=5)
+        
+        # Indicador de status
+        self.status_indicator = tk.Label(status_frame, text="●", font=('Arial', 16),
+                                        fg=self.colors['success'], bg=self.colors['bg_medium'])
+        self.status_indicator.pack(side=tk.RIGHT, padx=10)
 
         self._show_welcome_screen()
+
+    def _on_mode_change(self):
+        """Callback para mudança de modo"""
+        self.random_mode = (self.mode_var.get() == "aleatorio")
+        if self.current_step > 0:
+            self._reset_all()  # Reset se já começou
 
     def _show_welcome_screen(self):
         """Tela inicial com explicação sobre pulsares"""
         self.ax.clear()
-        self.ax.text(0.5, 0.7, "🌟 BEM-VINDO AO DETECTOR DE PULSARES!", 
-                    ha='center', va='center', fontsize=20, fontweight='bold',
-                    transform=self.ax.transAxes)
+        self.ax.set_facecolor(self.colors['bg_dark'])
         
-        self.ax.text(0.5, 0.5, "Um pulsar é uma estrela de nêutrons rotativa que emite\nfeixes de radiação em intervalos regulares.", 
+        # Criar um "display" futurístico
+        self.ax.text(0.5, 0.85, "🌟 DETECTOR DE PULSARES v2.0", 
+                    ha='center', va='center', fontsize=24, fontweight='bold',
+                    color=self.colors['accent_cyan'], transform=self.ax.transAxes)
+        
+        self.ax.text(0.5, 0.75, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", 
                     ha='center', va='center', fontsize=12,
-                    transform=self.ax.transAxes)
+                    color=self.colors['accent_purple'], transform=self.ax.transAxes)
         
-        self.ax.text(0.5, 0.3, "Neste simulador, você aprenderá como detectar\nestes sinais usando processamento digital!", 
-                    ha='center', va='center', fontsize=11, style='italic',
-                    transform=self.ax.transAxes)
+        self.ax.text(0.5, 0.65, "Sistema de Processamento Digital de Sinais", 
+                    ha='center', va='center', fontsize=16, style='italic',
+                    color=self.colors['text_secondary'], transform=self.ax.transAxes)
         
-        self.ax.text(0.5, 0.1, "👆 Clique no primeiro passo para começar!", 
-                    ha='center', va='center', fontsize=14, color='blue',
-                    transform=self.ax.transAxes)
+        self.ax.text(0.5, 0.55, "Aplicado à Detecção de Estrelas de Nêutrons", 
+                    ha='center', va='center', fontsize=16, style='italic',
+                    color=self.colors['text_secondary'], transform=self.ax.transAxes)
+        
+        # Informações técnicas
+        self.ax.text(0.5, 0.4, "⚡ ESPECIFICAÇÕES TÉCNICAS ⚡", 
+                    ha='center', va='center', fontsize=14, fontweight='bold',
+                    color=self.colors['accent_green'], transform=self.ax.transAxes)
+        
+        specs_text = """🔬 Processamento: FFT de alta resolução
+📡 Filtragem: Butterworth digital adaptativo
+🎯 Detecção: Análise espectral automática
+🚀 Interface: Modo educativo + casos reais"""
+        
+        self.ax.text(0.5, 0.25, specs_text, 
+                    ha='center', va='center', fontsize=12,
+                    color=self.colors['text_primary'], transform=self.ax.transAxes,
+                    bbox=dict(boxstyle="round,pad=0.5", facecolor=self.colors['bg_medium'], 
+                             edgecolor=self.colors['accent_cyan'], alpha=0.8))
+        
+        self.ax.text(0.5, 0.08, "► INICIAR SEQUÊNCIA DE DETECÇÃO ◄", 
+                    ha='center', va='center', fontsize=16, fontweight='bold',
+                    color=self.colors['warning'], transform=self.ax.transAxes,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor=self.colors['bg_light'], 
+                             edgecolor=self.colors['warning'], alpha=0.9))
         
         self.ax.set_xlim(0, 1)
         self.ax.set_ylim(0, 1)
         self.ax.axis('off')
+        
+        # Adicionar grade sutil de fundo
+        for i in range(20):
+            alpha = 0.05
+            self.ax.axhline(y=i/20, color=self.colors['accent_cyan'], alpha=alpha, linewidth=0.5)
+            self.ax.axvline(x=i/20, color=self.colors['accent_cyan'], alpha=alpha, linewidth=0.5)
+        
         self.canvas.draw()
         
-        welcome_text = """
-🌟 INTRODUÇÃO AOS PULSARES
+        welcome_text = f"""
+🌟 DETECTOR DE PULSARES v2.0
 
-Os pulsares são estrelas de nêutrons que rotacionam rapidamente e emitem feixes de radiação eletromagnética. Quando esses feixes apontam para a Terra, detectamos pulsos regulares - como um farol cósmico!
+INICIALIZANDO SISTEMA...
+████████████████████████ 100%
 
-🎯 OBJETIVOS DE APRENDIZADO:
-• Compreender superposição de sinais senoidais
-• Aplicar conceitos de amostragem e discretização  
-• Entender filtragem digital passa-baixa
-• Realizar análise espectral com FFT
-• Detectar periodicidade em sinais ruidosos
+🎯 MISSÃO: Detectar periodicidade em sinais cósmicos
+📊 MÉTODO: Processamento Digital de Sinais
+🔬 ALGORITMOS: FFT, Filtragem Butterworth, Análise Espectral
 
-📚 CONCEITOS ABORDADOS:
-• Síntese de sinais por superposição
-• Teorema de Nyquist
-• Sistemas lineares invariantes no tempo (LTI)
-• Transformada de Fourier Discreta
-• Filtragem Butterworth
+═══════════════════════════════════════════════════
+
+🧠 OBJETIVOS DE APRENDIZADO:
+• Síntese e superposição de sinais
+• Teorema de amostragem de Nyquist  
+• Filtragem digital passa-baixa
+• Análise espectral com FFT
+• Detecção de periodicidade em ruído
+
+📚 CONCEITOS FUNDAMENTAIS:
+• Sistemas Lineares Invariantes no Tempo (LTI)
+• Transformada de Fourier Discreta (DFT)
+• Processamento digital de ruído
 • Relação sinal-ruído (SNR)
 
-Clique no primeiro passo para começar a jornada!
+🎮 MODOS DE OPERAÇÃO:
+• EDUCATIVO: Demonstração com parâmetros fixos
+• ALEATÓRIO: Casos reais (pode não haver pulsar!)
+
+⚠️  NOTA IMPORTANTE:
+No modo aleatório, nem sempre há pulsar detectável!
+Isso simula condições reais de observação astronômica.
+
+🚀 READY FOR LAUNCH! Clique no primeiro passo...
         """
         self.explanation_text.delete(1.0, tk.END)
         self.explanation_text.insert(tk.END, welcome_text)
@@ -186,14 +355,23 @@ Clique no primeiro passo para começar a jornada!
         self.current_step = step
         self.progress_var.set(f"Passo {step}/{self.total_steps}: {description}")
         self.progress_bar['value'] = (step / self.total_steps) * 100
-        self.status_var.set(f"Executando: {description}")
+        self.status_var.set(f"🔄 Processando: {description} | Sistema Operacional")
         
-        # Habilita o próximo botão
+        # Atualizar indicador de status
+        if step < self.total_steps:
+            self.status_indicator.configure(fg=self.colors['warning'])  # Amarelo durante processamento
+        else:
+            self.status_indicator.configure(fg=self.colors['success'])  # Verde quando completo
+        
+        # Habilita o próximo botão com cores tecnológicas
         for i, btn in enumerate(self.step_buttons):
             if i <= step:
-                btn.configure(state='normal', bg='#27ae60' if i < step else '#3498db')
+                if i < step:
+                    btn.configure(state='normal', bg=self.colors['success'])  # Verde para concluído
+                else:
+                    btn.configure(state='normal', bg=self.colors['button_primary'])  # Azul para atual
             else:
-                btn.configure(state='disabled', bg='#95a5a6')
+                btn.configure(state='disabled', bg='#555')  # Cinza para desabilitado
 
     def _step1_generate_components(self):
         """Passo 1: Gerar e mostrar componentes senoidais individuais"""
@@ -203,58 +381,130 @@ Clique no primeiro passo para começar a jornada!
             t = np.arange(0, self.duration, T)
             self.current_time_vector = t
             
-            # Parâmetros fixos para demonstração educativa
-            np.random.seed(42)  # Para resultados reproduzíveis
-            num_components = 3
-            
-            self.individual_components = []
-            freqs = [5, 15, 25]  # Frequências bem definidas para visualização
-            amps = [1.5, 1.0, 0.8]
-            phases = [0, np.pi/4, np.pi/2]
-            
-            # Gerar cada componente
-            for i in range(num_components):
-                component = amps[i] * np.sin(2 * np.pi * freqs[i] * t + phases[i])
-                self.individual_components.append({
-                    'signal': component,
-                    'freq': freqs[i],
-                    'amp': amps[i],
-                    'phase': phases[i]
-                })
+            if self.random_mode:
+                # Modo aleatório: usar geração aleatória
+                from generate_signal import generate_and_save_random_signal
+                _, _, self.signal_info = generate_and_save_random_signal(
+                    self.Fs, self.duration, 0.5, force_random=True)
+                
+                # Construir componentes baseados no sinal_info
+                self.individual_components = []
+                if self.signal_info['num_components'] > 0:
+                    for i in range(self.signal_info['num_components']):
+                        component = self.signal_info['amplitudes'][i] * np.sin(
+                            2 * np.pi * self.signal_info['frequencies'][i] * t + 
+                            self.signal_info['phases'][i])
+                        self.individual_components.append({
+                            'signal': component,
+                            'freq': self.signal_info['frequencies'][i],
+                            'amp': self.signal_info['amplitudes'][i],
+                            'phase': self.signal_info['phases'][i]
+                        })
+            else:
+                # Modo educativo: parâmetros fixos
+                np.random.seed(42)  # Para resultados reproduzíveis
+                self.individual_components = []
+                freqs = [5, 15, 25]  # Frequências bem definidas para visualização
+                amps = [1.5, 1.0, 0.8]
+                phases = [0, np.pi/4, np.pi/2]
+                
+                self.signal_info = {
+                    'frequencies': freqs,
+                    'amplitudes': amps,
+                    'phases': phases,
+                    'num_components': 3,
+                    'signal_type': 'educational'
+                }
+                
+                # Gerar cada componente
+                for i in range(3):
+                    component = amps[i] * np.sin(2 * np.pi * freqs[i] * t + phases[i])
+                    self.individual_components.append({
+                        'signal': component,
+                        'freq': freqs[i],
+                        'amp': amps[i],
+                        'phase': phases[i]
+                    })
             
             # Plotar componentes individuais
             self.ax.clear()
-            colors = ['red', 'blue', 'green']
             
-            for i, comp in enumerate(self.individual_components):
-                self.ax.plot(t[:500], comp['signal'][:500], 
-                           color=colors[i], linewidth=2,
-                           label=f'Comp {i+1}: {comp["freq"]} Hz, A={comp["amp"]:.1f}')
-            
-            self.ax.set_title('🎲 Passo 1: Componentes Senoidais Individuais', fontsize=14, fontweight='bold')
-            self.ax.set_xlabel('Tempo (s)')
-            self.ax.set_ylabel('Amplitude')
-            self.ax.grid(True, alpha=0.3)
-            self.ax.legend()
-            self.ax.set_xlim(0, 0.5)  # Mostra apenas os primeiros 0.5s para clareza
+            if len(self.individual_components) == 0:
+                # Caso especial: apenas ruído
+                self.ax.text(0.5, 0.5, "🔍 SINAL DETECTADO: APENAS RUÍDO\n\n"
+                           "Este é um caso realista onde não há\npulsar detectável no sinal!\n\n"
+                           "Prossiga para ver como o sistema\nlida com a ausência de periodicidade.",
+                           ha='center', va='center', fontsize=14,
+                           transform=self.ax.transAxes,
+                           bbox=dict(boxstyle="round,pad=0.3", facecolor="orange", alpha=0.8))
+                self.ax.set_xlim(0, 1)
+                self.ax.set_ylim(0, 1)
+                self.ax.axis('off')
+            else:
+                colors = ['red', 'blue', 'green', 'purple', 'orange']
+                for i, comp in enumerate(self.individual_components):
+                    color = colors[i % len(colors)]
+                    self.ax.plot(t[:500], comp['signal'][:500], 
+                               color=color, linewidth=2,
+                               label=f'Comp {i+1}: {comp["freq"]:.1f} Hz, A={comp["amp"]:.1f}')
+                
+                self.ax.set_title('🎲 Passo 1: Componentes Senoidais Individuais', 
+                                fontsize=14, fontweight='bold')
+                self.ax.set_xlabel('Tempo (s)')
+                self.ax.set_ylabel('Amplitude')
+                self.ax.grid(True, alpha=0.3)
+                self.ax.legend()
+                self.ax.set_xlim(0, 0.5)  # Mostra apenas os primeiros 0.5s para clareza
             
             self.canvas.draw()
             self._update_progress(1, "Componentes Geradas")
             
-            explanation = """
-🎲 PASSO 1: COMPONENTES SENOIDAIS
+            # Gerar texto explicativo baseado no tipo de sinal
+            if len(self.individual_components) == 0:
+                explanation = """
+🎲 PASSO 1: SINAL SEM COMPONENTES PERIÓDICAS
+
+⚠️ CASO REALISTA DETECTADO!
+Este sinal representa uma situação comum na astronomia onde apenas RUÍDO é captado.
+
+📊 CARACTERÍSTICAS:
+• Número de componentes: 0
+• Tipo de sinal: Apenas ruído
+• Periodicidade: Ausente
+
+🔬 CENÁRIOS REAIS:
+• Pulsar muito distante (sinal fraco)
+• Direcionamento incorreto da antena
+• Interferência dominante
+• Pulsar "jovem" ainda instável
+
+🎯 APRENDIZADO:
+Nem sempre detectamos pulsares! O processamento deve ser robusto para identificar quando NÃO há sinal útil.
+
+Próximo: Vamos ver como isso afeta a análise...
+                """
+            else:
+                signal_type = self.signal_info.get('signal_type', 'unknown')
+                mode_text = "EDUCATIVO" if not self.random_mode else "ALEATÓRIO"
+                
+                explanation = f"""
+🎲 PASSO 1: COMPONENTES SENOIDAIS ({mode_text})
 
 Cada pulsar emite energia em diferentes frequências. Modelamos isso como uma SUPERPOSIÇÃO DE SENOIDES:
 
-📊 COMPONENTES GERADAS:
-• Componente 1: 5 Hz (vermelho) - Frequência fundamental
-• Componente 2: 15 Hz (azul) - Primeiro harmônico  
-• Componente 3: 25 Hz (verde) - Segundo harmônico
+📊 COMPONENTES GERADAS: {len(self.individual_components)}
+"""
+                for i, comp in enumerate(self.individual_components):
+                    explanation += f"• Componente {i+1}: {comp['freq']:.1f} Hz (Amplitude: {comp['amp']:.1f})\n"
+
+                if signal_type == 'irregular':
+                    explanation += "\n⚠️ SINAL IRREGULAR DETECTADO!"
+                    explanation += "\nEste sinal tem frequências próximas que podem causar interferência (batimento)."
+                
+                explanation += """
 
 🔬 EQUAÇÃO MATEMÁTICA:
-x₁(t) = A₁·sin(2πf₁t + φ₁)
-x₂(t) = A₂·sin(2πf₂t + φ₂)  
-x₃(t) = A₃·sin(2πf₃t + φ₃)
+x(t) = Σ Aᵢ·sin(2πfᵢt + φᵢ)
 
 📏 PARÂMETROS:
 • Frequência (f): Determina quantos ciclos por segundo
@@ -265,7 +515,8 @@ x₃(t) = A₃·sin(2πf₃t + φ₃)
 Sinais complexos podem ser decompostos em componentes senoidais simples - base da Análise de Fourier!
 
 Próximo: Vamos somar essas componentes (Princípio da Superposição)
-            """
+                """
+            
             self.explanation_text.delete(1.0, tk.END)
             self.explanation_text.insert(tk.END, explanation)
             
@@ -291,67 +542,118 @@ Próximo: Vamos somar essas componentes (Princípio da Superposição)
             
             # Subplot 1: Componentes individuais
             ax1 = self.fig.add_subplot(2, 1, 1)
-            colors = ['red', 'blue', 'green']
+            ax1.set_facecolor(self.colors['bg_medium'])
             
-            for i, comp in enumerate(self.individual_components):
-                ax1.plot(t[:500], comp['signal'][:500], 
-                        color=colors[i], linewidth=1.5, alpha=0.7,
-                        label=f'{comp["freq"]} Hz')
-            
-            ax1.set_title('Componentes Individuais', fontsize=12, fontweight='bold')
-            ax1.set_ylabel('Amplitude')
-            ax1.grid(True, alpha=0.3)
-            ax1.legend()
-            ax1.set_xlim(0, 0.5)
+            if len(self.individual_components) > 0:
+                colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57']
+                
+                for i, comp in enumerate(self.individual_components):
+                    color = colors[i % len(colors)]
+                    ax1.plot(t[:500], comp['signal'][:500], 
+                            color=color, linewidth=2, alpha=0.8,
+                            label=f'{comp["freq"]:.1f} Hz')
+                
+                ax1.set_title('Componentes Individuais', fontsize=12, fontweight='bold',
+                             color=self.colors['text_primary'])
+                ax1.set_ylabel('Amplitude', color=self.colors['text_primary'])
+                ax1.grid(True, alpha=0.3, color=self.colors['text_secondary'])
+                ax1.legend()
+                ax1.set_xlim(0, 0.5)
+                ax1.tick_params(colors=self.colors['text_secondary'])
             
             # Subplot 2: Sinal resultante
             ax2 = self.fig.add_subplot(2, 1, 2)
-            ax2.plot(t[:500], self.clean_signal[:500], 
-                    color='purple', linewidth=2.5,
-                    label='Sinal Resultante (Superposição)')
+            ax2.set_facecolor(self.colors['bg_medium'])
             
-            ax2.set_title('➕ Passo 2: Sinal Resultante da Superposição', fontsize=12, fontweight='bold')
-            ax2.set_xlabel('Tempo (s)')
-            ax2.set_ylabel('Amplitude')
-            ax2.grid(True, alpha=0.3)
-            ax2.legend()
-            ax2.set_xlim(0, 0.5)
+            if len(self.individual_components) > 0:
+                ax2.plot(t[:500], self.clean_signal[:500], 
+                        color=self.colors['accent_purple'], linewidth=3,
+                        label='Sinal Resultante (Superposição)')
+                
+                ax2.set_title('⚡ Passo 2: Sinal Resultante da Superposição', 
+                             fontsize=12, fontweight='bold', color=self.colors['text_primary'])
+                ax2.set_xlabel('Tempo (s)', color=self.colors['text_primary'])
+                ax2.set_ylabel('Amplitude', color=self.colors['text_primary'])
+                ax2.grid(True, alpha=0.3, color=self.colors['text_secondary'])
+                ax2.legend()
+                ax2.set_xlim(0, 0.5)
+                ax2.tick_params(colors=self.colors['text_secondary'])
+            else:
+                # Caso de apenas ruído
+                ax2.text(0.5, 0.5, "⚠️ SINAL NULO\n\nNenhuma componente detectada.\nApenas ruído será adicionado no próximo passo.",
+                        ha='center', va='center', fontsize=14,
+                        color=self.colors['warning'], transform=ax2.transAxes,
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor=self.colors['bg_light'], alpha=0.8))
+                ax2.set_xlim(0, 1)
+                ax2.set_ylim(0, 1)
+                ax2.axis('off')
+                # Criar sinal zero para próximos passos
+                self.clean_signal = np.zeros_like(t)
             
             self.fig.tight_layout()
             self.canvas.draw()
             self._update_progress(2, "Superposição Aplicada")
             
-            explanation = """
-➕ PASSO 2: PRINCÍPIO DA SUPERPOSIÇÃO
+            # Explanation baseada no número de componentes
+            if len(self.individual_components) == 0:
+                explanation = """
+⚡ PASSO 2: SUPERPOSIÇÃO (CASO ESPECIAL)
+
+⚠️ SINAL SEM COMPONENTES PERIÓDICAS
+
+Como não há componentes para somar, o sinal resultante é ZERO (apenas ruído será adicionado posteriormente).
+
+🔬 IMPLICAÇÕES MATEMÁTICAS:
+x(t) = 0  (sinal nulo)
+
+🎯 CENÁRIO REALISTA:
+• Pulsar fora do campo de visão
+• Sinal abaixo do limiar de detecção
+• Apenas ruído de fundo presente
+• Falso alarme ou observação negativa
+
+📊 PRÓXIMOS PASSOS:
+O sistema continuará o processamento apenas com ruído, demonstrando como algoritmos lidam com ausência de sinal.
+
+Próximo: Adicionar ruído ao sinal nulo
+                """
+            else:
+                explanation = f"""
+⚡ PASSO 2: PRINCÍPIO DA SUPERPOSIÇÃO
 
 O sinal final é a SOMA ALGÉBRICA de todas as componentes!
 
 🔬 PRINCÍPIO MATEMÁTICO:
-x(t) = x₁(t) + x₂(t) + x₃(t)
-x(t) = A₁·sin(2πf₁t + φ₁) + A₂·sin(2πf₂t + φ₂) + A₃·sin(2πf₃t + φ₃)
+x(t) = Σ xᵢ(t) = {' + '.join([f'x{i+1}(t)' for i in range(len(self.individual_components))])}
 
-🎯 CONCEITOS IMPORTANTES:
+onde cada xᵢ(t) = Aᵢ·sin(2πfᵢt + φᵢ)
+
+🎯 CONCEITOS FUNDAMENTAIS:
 
 1️⃣ LINEARIDADE:
 A saída é proporcional à entrada - duplicar a amplitude duplica o resultado.
 
 2️⃣ SUPERPOSIÇÃO:
-O efeito total é a soma dos efeitos individuais.
+O efeito total é a soma dos efeitos individuais. Esta é a base dos sistemas LTI!
 
 3️⃣ INTERFERÊNCIA:
-• Construtiva: ondas em fase se somam
-• Destrutiva: ondas fora de fase se cancelam
+• Construtiva: ondas em fase se somam (amplitude aumenta)
+• Destrutiva: ondas fora de fase se cancelam (amplitude diminui)
 
 📊 OBSERVE NO GRÁFICO:
-• O sinal roxo é complexo mas periódico
-• Diferentes frequências criam o padrão único
-• A amplitude varia devido à interferência
+• O sinal resultante (roxo) é complexo mas determinístico
+• Diferentes frequências criam padrões únicos
+• A amplitude varia devido à interferência entre componentes
 
 🌟 APLICAÇÃO REAL:
-Pulsares emitem em múltiplas frequências simultaneamente - este é o padrão que detectaríamos no espaço!
+Pulsares emitem em múltiplas frequências simultaneamente - este é o padrão característico que detectaríamos no espaço!
 
-Próximo: Adicionar ruído realista
-            """
+🔍 ANÁLISE MATEMÁTICA:
+Com {len(self.individual_components)} componentes, o sinal tem periodicidade complexa determinada pela combinação das frequências fundamentais.
+
+Próximo: Adicionar ruído realista para simular condições de observação
+                """
+            
             self.explanation_text.delete(1.0, tk.END)
             self.explanation_text.insert(tk.END, explanation)
             
@@ -691,22 +993,30 @@ Você aprendeu todo o pipeline de detecção de pulsares usando processamento di
         self.current_time_vector = None
         self.individual_components = []
         self.clean_signal = None
+        self.signal_info = {}
         
-        # Reset botões
+        # Limpar resultados filtrados se existirem
+        if hasattr(self, 'filtered_results'):
+            delattr(self, 'filtered_results')
+        
+        # Reset botões - APENAS o primeiro deve estar habilitado
         for i, btn in enumerate(self.step_buttons):
             if i == 0:
-                btn.configure(state='normal', bg='#3498db')
+                btn.configure(state='normal', bg=self.colors['button_primary'])
             else:
-                btn.configure(state='disabled', bg='#95a5a6')
+                btn.configure(state='disabled', bg='#555')
         
         # Reset progress
-        self.progress_var.set("Passo 0/5: Início")
+        self.progress_var.set("Passo 0/5: Sistema Reinicializado")
         self.progress_bar['value'] = 0
-        self.status_var.set("Pronto para começar!")
+        self.status_var.set("🚀 Sistema Reinicializado | Pronto para Nova Detecção")
+        self.status_indicator.configure(fg=self.colors['success'])
         
-        # Reset plot
+        # Reset plot - limpar completamente e mostrar tela inicial
+        self.fig.clear()
+        self.ax = self.fig.add_subplot(1, 1, 1)
         self._show_welcome_screen()
-
+    
     def _clear_plots(self):
         """Método mantido para compatibilidade"""
         pass
@@ -716,7 +1026,7 @@ Você aprendeu todo o pipeline de detecção de pulsares usando processamento di
         pass
 
     def _process_signal(self):
-        """Método mantido para compatibilidade"""
+        """Método mantido para compatibilidade"""   
         pass
 
 
