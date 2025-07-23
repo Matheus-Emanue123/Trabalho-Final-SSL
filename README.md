@@ -558,8 +558,8 @@ self.fonts = {
 - **Astronomia**: [Handbook of Pulsar Astronomy](https://ui.adsabs.harvard.edu/abs/2004hpa..book.....L/abstract)
 
 ### 👥 Equipe de Desenvolvimento
-- **Desenvolvedor Principal**: Matheus Emanuel
-- **Orientação Acadêmica**: CEFET
+- **Desenvolvedor Principal**: Matheus Emanuel e João Paulo
+- **Orientação Acadêmica**: Thabatta Araújo
 - **Disciplina**: Sinais e Sistemas Lineares
 
 ---
